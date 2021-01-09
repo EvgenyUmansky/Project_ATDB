@@ -4,7 +4,12 @@
 package org.bgu.ise.ddb.history;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -176,7 +181,7 @@ public class HistoryController extends ParentController{
 			System.out.println(ex);
 		}
 		
-		return new HistoryPair[]{hp};
+		return new HistoryPair[0];
 	}
 	
 	/**
@@ -189,9 +194,43 @@ public class HistoryController extends ParentController{
 	@org.codehaus.jackson.map.annotate.JsonView(HistoryPair.class)
 	public  User[] getUsersByItem(@RequestParam("title") String title){
 		//:TODO your implementation
-		User hp = new User("aa","aa","aa");
-		System.out.println(hp);
-		return new User[]{hp};
+		if(title == null ||title.isEmpty()) {
+			return new User[0];
+		}
+		
+		HistoryPair[] historyPairs = getHistoryByItems(title);
+		if(historyPairs.length == 0) {
+			return new User[0];
+		}
+		
+		try(
+				MongoClient mongoClient = new MongoClient("localhost", 27017);
+		   ){
+			
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("Registration");
+			User[] users = new User[historyPairs.length];
+			
+			for(int i = 0; i < historyPairs.length; i++) {
+				BasicDBObject searchQuery = new BasicDBObject();
+				searchQuery.put("username", historyPairs[i].getCredentials());
+				DBCursor cursor = collection.find(searchQuery); //find user per title
+				
+				DBObject userData = cursor.next();
+				users[i] = new User((String)userData.get("username"), (String)userData.get("firstname"), 
+						(String)userData.get("lastname"));
+			
+			}
+			return users;
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+//		User hp = new User("aa","aa","aa");
+//		System.out.println(hp);
+		return new User[0];
 	}
 	
 	/**
@@ -208,6 +247,40 @@ public class HistoryController extends ParentController{
 			@RequestParam("title2") String title2){
 		//:TODO your implementation
 		double ret = 0.0;
+		
+		User[] usersObj1 = getUsersByItem(title1);
+		User[] usersObj2 = getUsersByItem(title2);
+		
+		ArrayList<String> users1 = new ArrayList<String>();
+		ArrayList<String> users2 = new ArrayList<String>();
+		
+		// get usernames to arrays of string names
+		for (User user : usersObj1){
+			users1.add(user.getUsername());
+		}
+		
+		for (User user : usersObj2){
+			users2.add(user.getUsername());
+		}
+		
+		// Intersection list
+		Set<String> intersectionSet = users1.stream()
+				  .distinct()
+				  .filter(users2::contains)
+				  .collect(Collectors.toSet());
+		
+		// get sets of users by two titles 
+		Set<String> U1 = new HashSet<String>(users1);
+		Set<String> U2 = new HashSet<String>(users2);
+		
+		U1.addAll(U2); // union
+		
+		if(U1.size() == 0) {
+			return ret;
+		}
+		
+		ret = ((double) intersectionSet.size()) / ((double) U1.size());
+		
 		return ret;
 	}
 	

@@ -107,6 +107,8 @@ public class ItemsController extends ParentController {
 		System.out.println(urladdress);
 		//:TODO your implementation
 		if(urladdress == null || urladdress.isEmpty()) {
+			HttpStatus status = HttpStatus.CONFLICT;
+			response.setStatus(status.value());
 			return;
 		}
 		
