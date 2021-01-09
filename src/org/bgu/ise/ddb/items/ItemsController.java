@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.bgu.ise.ddb.MediaItems;
 import org.bgu.ise.ddb.ParentController;
+import org.bson.Document;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -19,6 +20,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCursor;
+
+import jdk.jshell.spi.ExecutionControl.ExecutionControlException;
+
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
@@ -26,6 +31,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 import java.sql.*;
+import java.util.Iterator;
 import java.util.Scanner;
 
 /**
@@ -66,14 +72,14 @@ public class ItemsController extends ParentController {
 				String title = result.getString("TITLE");
 				int year = Integer.parseInt(result.getString("PROD_YEAR"));
 				
-				if(isKeyValueInCollection("MediaItems", "Title", title)) {
+				if(isKeyValueInCollection("MediaItems", "title", title)) {
 					continue;
 				}
 				
 				// add the data to mongo
 				BasicDBObject insertionDocument = new BasicDBObject();
-				insertionDocument.put("Title", title);
-				insertionDocument.put("Prod_Year", year);
+				insertionDocument.put("title", title);
+				insertionDocument.put("prod_year", year);
 				collection.insert(insertionDocument);
 			}
 		}
@@ -119,14 +125,14 @@ public class ItemsController extends ParentController {
 	            String[] titleYear = line.split(",");
 	            System.out.println(line);
 	            
-				if(isKeyValueInCollection("MediaItems", "Title", titleYear[0])) {
+				if(isKeyValueInCollection("MediaItems", "title", titleYear[0])) {
 					continue;
 				}
 				
 				// add the data to mongo
 				BasicDBObject insertionDocument = new BasicDBObject();
-				insertionDocument.put("Title", titleYear[0]);
-				insertionDocument.put("Prod_Year", Integer.parseInt(titleYear[1]));
+				insertionDocument.put("title", titleYear[0]);
+				insertionDocument.put("prod_year", Integer.parseInt(titleYear[1]));
 				collection.insert(insertionDocument);
 	        }
 	    }
@@ -150,11 +156,31 @@ public class ItemsController extends ParentController {
 	@org.codehaus.jackson.map.annotate.JsonView(MediaItems.class)
 	public  MediaItems[] getTopNItems(@RequestParam("topn")    int topN){
 		//:TODO your implementation
-		MediaItems m = new MediaItems("Game of Thrones", 2011);
-		System.out.println(m);
-		return new MediaItems[]{m};
+		if(topN <= 0) {
+			return new MediaItems[0];
+		}
+		
+		MediaItems[] mediaItems = new MediaItems[topN];
+		try(
+				MongoClient mongoClient = new MongoClient("localhost", 27017);
+		   ){
+			
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("MediaItems");
+			Iterator<DBObject> iter = collection.find().iterator();
+			
+			for(int i = 0; i < topN; i++) {
+				DBObject data = iter.next();
+				mediaItems[i] = new MediaItems(data.get("title").toString(), Integer.parseInt(data.get("prod_year").toString()));
+			}
+			
+		 }
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return mediaItems;
 	}
-	
 	
 	
 	// check if the data is already exists in mongo 
