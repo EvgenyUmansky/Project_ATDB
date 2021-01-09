@@ -6,6 +6,12 @@ package org.bgu.ise.ddb.registration;
 
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.time.LocalDate;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.bgu.ise.ddb.ParentController;
@@ -16,6 +22,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.mongodb.MongoClient;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
 
 /**
  * @author Alex
@@ -43,9 +56,38 @@ public class RegistarationController extends ParentController{
 			@RequestParam("lastName")  String lastName,
 			HttpServletResponse response){
 		System.out.println(username+" "+password+" "+lastName+" "+firstName);
-		//:TODO your implementation
-		HttpStatus status = HttpStatus.OK;
-		response.setStatus(status.value());
+		
+		//:TODO Date???????
+		try {
+			if(isExistUser(username)) {
+				HttpStatus status = HttpStatus.CONFLICT;
+				response.setStatus(status.value());
+				return;
+			}
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("Registration");
+			
+			BasicDBObject addQuery = new BasicDBObject();
+			addQuery.put("username", username);
+			addQuery.put("firstname", firstName);
+			addQuery.put("lastname", lastName);
+			addQuery.put("password", password);
+			addQuery.put("date", LocalDate.now()); // to use for retrieve users from last n days
+			
+			collection.insert(addQuery);
+
+			
+			mongoClient.close();
+			
+			
+			HttpStatus status = HttpStatus.OK;
+			response.setStatus(status.value());
+			
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
+	
 		
 	}
 	
@@ -58,10 +100,26 @@ public class RegistarationController extends ParentController{
 	@RequestMapping(value = "is_exist_user", method={RequestMethod.GET})
 	public boolean isExistUser(@RequestParam("username") String username) throws IOException{
 		System.out.println(username);
-		boolean result = false;
 		//:TODO your implementation
+		//https://www.baeldung.com/java-mongodb
+		try {
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("Registration");
+			BasicDBObject searchQuery = new BasicDBObject();
+			searchQuery.put("username", username);
+			DBCursor cursor = collection.find(searchQuery);
+
+			while (cursor.hasNext()) {
+			    return true;
+			}
+			
+			mongoClient.close();
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
 		
-		return result;
+		return false;
 		
 	}
 	
@@ -75,11 +133,27 @@ public class RegistarationController extends ParentController{
 	public boolean validateUser(@RequestParam("username") String username,
 			@RequestParam("password")    String password) throws IOException{
 		System.out.println(username+" "+password);
-		boolean result = false;
 		//:TODO your implementation
 		
+		try {
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("Registration");
+			BasicDBObject searchQuery = new BasicDBObject();
+			searchQuery.put("username", username);
+			searchQuery.put("password", password);
+			DBCursor cursor = collection.find(searchQuery);
+
+			while (cursor.hasNext()) {
+			    return true;
+			}
+			
+			mongoClient.close();
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
 		
-		return result;
+		return false;
 		
 	}
 	
@@ -94,6 +168,25 @@ public class RegistarationController extends ParentController{
 		System.out.println(days+"");
 		int result = 0;
 		//:TODO your implementation
+		try {
+	        LocalDate minDate = LocalDate.now().minusDays(days);   // subtract n days (minimum day allowed...)
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("Registration");
+			BasicDBObject searchQuery = new BasicDBObject();
+			searchQuery.put("date", new BasicDBObject("$gt", mongoClient));
+			DBCursor cursor = collection.find(searchQuery);
+
+			while (cursor.hasNext()) {
+				result++;
+				cursor.next();
+			}
+			
+			mongoClient.close();
+			
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
 		
 		return result;
 		
@@ -110,6 +203,29 @@ public class RegistarationController extends ParentController{
 		//:TODO your implementation
 		User u = new User("alex", "alex", "alex");
 		System.out.println(u);
+		
+		try {
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("Registration");
+			DBCursor cursor = collection.find(); // all users
+			User[] users = new User[cursor.size()];
+			int i = 0;
+			while (cursor.hasNext()) {
+				DBObject tempObj = cursor.next();
+				User temp = new User((String)tempObj.get("username"),
+						(String)tempObj.get("firstname"),(String)tempObj.get("lastname"));
+				users[i] = temp;
+				i++;
+			}
+			
+			mongoClient.close();
+			return users;
+			
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
+		
 		return new User[]{u};
 	}
 
