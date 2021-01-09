@@ -3,6 +3,7 @@
  */
 package org.bgu.ise.ddb.history;
 
+import java.io.IOException;
 import java.util.Date;
 
 import javax.servlet.http.HttpServletResponse;
@@ -15,6 +16,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 
 /**
  * @author Alex
@@ -40,6 +48,32 @@ public class HistoryController extends ParentController{
 			HttpServletResponse response){
 		System.out.println(username+" "+title);
 		//:TODO your implementation
+		
+		try {
+			if(! (isExistUser(username) && isExistTitle(title))) {
+				HttpStatus status = HttpStatus.CONFLICT;
+				response.setStatus(status.value());
+				return;
+			}
+			
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("History");
+			BasicDBObject searchQuery = new BasicDBObject();
+			
+			//TODO: timestamp??????
+			searchQuery.put("username", username);
+			searchQuery.put("title", title);
+			searchQuery.put("timestamp", new Date().getTime());
+			
+			collection.insert(searchQuery);
+			
+			mongoClient.close();
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
+		
+		
 		HttpStatus status = HttpStatus.OK;
 		response.setStatus(status.value());
 	}
@@ -59,6 +93,40 @@ public class HistoryController extends ParentController{
 		//:TODO your implementation
 		HistoryPair hp = new HistoryPair("aa", new Date());
 		System.out.println("ByUser "+hp);
+		
+		
+		try {
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("History");
+			BasicDBObject searchQuery = new BasicDBObject();
+			
+			//TODO: timestamp??????
+			searchQuery.put("username", username);
+			
+			DBCursor cursor = collection.find(searchQuery); //find history per user
+			DBObject timeObj = new BasicDBObject("timestamp", -1);
+		    cursor.sort(timeObj); //sort results (a value of 1 or -1 to specify an ascending or descending sort respectively.)
+
+		    HistoryPair[] historyPairs = new HistoryPair[cursor.size()];
+			int i = 0;
+			while (cursor.hasNext()) {
+				DBObject tempObj = cursor.next();
+				HistoryPair temp = new HistoryPair((String)tempObj.get("title"),
+						new Date((long)tempObj.get("timestamp")));
+				historyPairs[i] = temp;
+				i++;
+			}
+			
+
+			mongoClient.close();
+			return historyPairs;
+			
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
+		
+		
 		return new HistoryPair[]{hp};
 	}
 	
@@ -76,6 +144,38 @@ public class HistoryController extends ParentController{
 		//:TODO your implementation
 		HistoryPair hp = new HistoryPair("aa", new Date());
 		System.out.println("ByItem "+hp);
+		
+		try {
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("History");
+			BasicDBObject searchQuery = new BasicDBObject();
+			
+			//TODO: timestamp??????
+			searchQuery.put("title", title);
+			
+			DBCursor cursor = collection.find(searchQuery); //find history per user
+			DBObject timeObj = new BasicDBObject("timestamp", -1);
+		    cursor.sort(timeObj); //sort results (a value of 1 or -1 to specify an ascending or descending sort respectively.)
+
+		    HistoryPair[] historyPairs = new HistoryPair[cursor.size()];
+			int i = 0;
+			while (cursor.hasNext()) {
+				DBObject tempObj = cursor.next();
+				HistoryPair temp = new HistoryPair((String)tempObj.get("username"),
+						new Date((long)tempObj.get("timestamp")));
+				historyPairs[i] = temp;
+				i++;
+			}
+			
+
+			mongoClient.close();
+			return historyPairs;
+			
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
+		
 		return new HistoryPair[]{hp};
 	}
 	
@@ -109,6 +209,57 @@ public class HistoryController extends ParentController{
 		//:TODO your implementation
 		double ret = 0.0;
 		return ret;
+	}
+	
+	
+	private boolean isExistUser(String username){
+		System.out.println(username);
+		//:TODO your implementation
+		//https://www.baeldung.com/java-mongodb
+		try {
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("Registration");
+			BasicDBObject searchQuery = new BasicDBObject();
+			searchQuery.put("username", username);
+			DBCursor cursor = collection.find(searchQuery);
+
+			while (cursor.hasNext()) {
+			    return true;
+			}
+			
+			mongoClient.close();
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
+		
+		return false;
+		
+	}
+	
+	private boolean isExistTitle(String title){
+		System.out.println(title);
+		//:TODO your implementation
+		//https://www.baeldung.com/java-mongodb
+		try {
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("MediaItems");
+			BasicDBObject searchQuery = new BasicDBObject();
+			searchQuery.put("title", title);
+			DBCursor cursor = collection.find(searchQuery);
+
+			while (cursor.hasNext()) {
+			    return true;
+			}
+			
+			mongoClient.close();
+		}catch(Exception ex) {
+			System.out.println(ex);
+		}
+		
+		return false;
+		
 	}
 	
 
