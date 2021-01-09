@@ -4,7 +4,8 @@
 package org.bgu.ise.ddb.items;
 
 import java.io.IOException;
-
+import java.net.URL;
+import java.net.URLConnection;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -25,6 +26,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 
 import java.sql.*;
+import java.util.Scanner;
 
 /**
  * @author Alex
@@ -64,10 +66,7 @@ public class ItemsController extends ParentController {
 				String title = result.getString("TITLE");
 				int year = Integer.parseInt(result.getString("PROD_YEAR"));
 				
-				// check if the data is already exists in mongo 
-				DBObject isExistQuery = new BasicDBObject("Title", title);
-				DBCursor isExistResult = collection.find(isExistQuery);
-				if(isExistResult.size() > 0) {
+				if(isKeyValueInCollection("MediaItems", "Title", title)) {
 					continue;
 				}
 				
@@ -97,18 +96,39 @@ public class ItemsController extends ParentController {
 	@RequestMapping(value = "fill_media_items_from_url", method={RequestMethod.GET})
 	public void fillMediaItemsFromUrl(@RequestParam("url")    String urladdress,
 			HttpServletResponse response) throws IOException{
+		// %26 instead &:
+		// https://drive.google.com/uc?export=download%26id=1kKKkAJlqf0xzfOmLpX9sZC6Zfq8JZfxr
 		System.out.println(urladdress);
 		//:TODO your implementation
 		if(urladdress == null || urladdress.isEmpty()) {
-			HttpStatus status = HttpStatus.CONFLICT;
-			response.setStatus(status.value());
 			return;
 		}
 		
-	    try {
-	        URL rowdata = new URL(url);
-	        URLConnection data = rowdata.openConnection();
-	        Scanner input = new Scanner(data.getInputStream());
+        URL rowdata = new URL(urladdress);
+        URLConnection data = rowdata.openConnection();
+        
+	    try (
+	    		MongoClient mongoClient = new MongoClient("localhost", 27017);
+	    		Scanner input = new Scanner(data.getInputStream());
+	    	){
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("MediaItems");
+	        
+	        while (input.hasNextLine()) {
+	            String line = input.nextLine();
+	            String[] titleYear = line.split(",");
+	            System.out.println(line);
+	            
+				if(isKeyValueInCollection("MediaItems", "Title", titleYear[0])) {
+					continue;
+				}
+				
+				// add the data to mongo
+				BasicDBObject insertionDocument = new BasicDBObject();
+				insertionDocument.put("Title", titleYear[0]);
+				insertionDocument.put("Prod_Year", Integer.parseInt(titleYear[1]));
+				collection.insert(insertionDocument);
+	        }
 	    }
 	    catch(Exception e) {
 	    	e.printStackTrace();
@@ -133,6 +153,26 @@ public class ItemsController extends ParentController {
 		MediaItems m = new MediaItems("Game of Thrones", 2011);
 		System.out.println(m);
 		return new MediaItems[]{m};
+	}
+	
+	
+	
+	// check if the data is already exists in mongo 
+	private boolean isKeyValueInCollection(String collectionName, String key, String value) {
+		try(MongoClient mongoClient = new MongoClient("localhost", 27017);){
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection(collectionName);
+			DBObject isExistQuery = new BasicDBObject(key, value);
+			DBCursor isExistResult = collection.find(isExistQuery);
+			
+			if(isExistResult.size() > 0) {
+				return true;
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 		
 
