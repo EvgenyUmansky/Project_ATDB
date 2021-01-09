@@ -34,6 +34,7 @@ public class ItemsController extends ParentController {
 	public void fillMediaItems(HttpServletResponse response){
 		System.out.println("was here");
 		//:TODO your implementation
+		//Test
 		try {
 			Connection connection = DriverManager.getConnection(
 	                "jdbc:oracle:thin:@132.72.65.216:1521:oracle", "mohsenab", "abcd");
