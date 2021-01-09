@@ -17,6 +17,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mongodb.MongoClient;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+
 import java.sql.*;
 
 /**
@@ -34,12 +39,17 @@ public class ItemsController extends ParentController {
 	public void fillMediaItems(HttpServletResponse response){
 		System.out.println("was here");
 		//:TODO your implementation
-		//Test
 		try {
+			Class.forName("oracle.jdbc.driver.OracleDriver");
 			Connection connection = DriverManager.getConnection(
 	                "jdbc:oracle:thin:@132.72.65.216:1521:oracle", "mohsenab", "abcd");
 			Statement statement = connection.createStatement();
 			ResultSet result = statement.executeQuery("SELECT * FROM MediaItems");
+			
+			MongoClient mongoClient = new MongoClient("localhost", 27017);
+			DB db = mongoClient.getDB("ProjectATDB");
+			DBCollection collection = db.getCollection("MediaItems");
+			int x = 0;
 			
 		}
 		catch(Exception e) {
