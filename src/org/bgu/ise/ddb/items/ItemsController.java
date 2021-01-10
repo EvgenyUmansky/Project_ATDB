@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.bgu.ise.ddb.MediaItems;
 import org.bgu.ise.ddb.ParentController;
-import org.bson.Document;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -20,10 +19,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCursor;
-
-import jdk.jshell.spi.ExecutionControl.ExecutionControlException;
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;

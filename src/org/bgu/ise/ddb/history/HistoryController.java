@@ -3,11 +3,9 @@
  */
 package org.bgu.ise.ddb.history;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -66,7 +64,6 @@ public class HistoryController extends ParentController{
 			DBCollection collection = db.getCollection("History");
 			BasicDBObject searchQuery = new BasicDBObject();
 			
-			//TODO: timestamp??????
 			searchQuery.put("username", username);
 			searchQuery.put("title", title);
 			searchQuery.put("timestamp", new Date().getTime());
@@ -106,7 +103,6 @@ public class HistoryController extends ParentController{
 			DBCollection collection = db.getCollection("History");
 			BasicDBObject searchQuery = new BasicDBObject();
 			
-			//TODO: timestamp??????
 			searchQuery.put("username", username);
 			
 			DBCursor cursor = collection.find(searchQuery); //find history per user
