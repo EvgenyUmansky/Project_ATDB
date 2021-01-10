@@ -65,6 +65,7 @@ public class ItemsController extends ParentController {
 				MongoClient mongoClient = new MongoClient("localhost", 27017);// open mongodb connection
 			){
 			DB db = mongoClient.getDB("ProjectATDB");
+			db.getCollection("MediaItems").drop();
 			DBCollection collection = db.getCollection("MediaItems");
 			// add the data from result to mongo
 			while(result.next()) {
@@ -120,6 +121,7 @@ public class ItemsController extends ParentController {
 	    		Scanner input = new Scanner(data.getInputStream());
 	    	){
 			DB db = mongoClient.getDB("ProjectATDB");
+			db.getCollection("MediaItems").drop();
 			DBCollection collection = db.getCollection("MediaItems");
 	        
 	        while (input.hasNextLine()) {
