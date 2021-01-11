@@ -7,9 +7,9 @@ package org.bgu.ise.ddb.registration;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.servlet.http.HttpServletResponse;
-
 import org.bgu.ise.ddb.ParentController;
 import org.bgu.ise.ddb.User;
 import org.springframework.http.HttpStatus;
@@ -25,6 +25,43 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+
+
+
+
+
+
+
+
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.swing.text.Document;
+
+import org.apache.tomcat.jni.Local;
+import org.bgu.ise.ddb.ParentController;
+import org.bgu.ise.ddb.User;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.ListIndexesIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.eq;
+
+import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * @author Alex
@@ -160,10 +197,13 @@ public class RegistarationController extends ParentController{
 		//:TODO your implementation
 		try(MongoClient mongoClient = new MongoClient("localhost", 27017);){
 			
+			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime date = now.minusDays(days);
+			
 			DB db = mongoClient.getDB("ProjectATDB");
 			DBCollection collection = db.getCollection("Registration");
 			BasicDBObject searchQuery = new BasicDBObject();
-			searchQuery.put("date", new BasicDBObject("$gt", mongoClient));
+			searchQuery.put("date", new BasicDBObject("$gt", date));
 			DBCursor cursor = collection.find(searchQuery);
 
 			while (cursor.hasNext()) {
@@ -173,7 +213,7 @@ public class RegistarationController extends ParentController{
 		}catch(Exception ex) {
 			System.out.println(ex);
 		}
-		
+	
 		return result;
 		
 	}
